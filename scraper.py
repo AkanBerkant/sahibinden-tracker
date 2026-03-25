@@ -151,10 +151,10 @@ async def main():
             continue
 
         print(f"  [{i}/{len(urls)}] Çekiliyor...")
-        await asyncio.sleep(3)
+        await asyncio.sleep(1.5)
 
         page = await browser.get(url)
-        await asyncio.sleep(4)
+        await asyncio.sleep(2)
         await bypass_sahibinden_check(page)
 
         detail_html = await page.get_content()
