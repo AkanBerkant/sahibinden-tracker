@@ -43,14 +43,53 @@ def parse_fiyat_sayi(text):
 
 
 async def bypass_sahibinden_check(pg):
-    """Sahibinden 'Devam Et' butonunu otomatik tıkla"""
-    for attempt in range(15):
+    """Sahibinden 'Devam Et' + Turnstile checkbox otomatik geç"""
+    for attempt in range(20):
         title = await pg.evaluate("document.title") or ""
         url = await pg.evaluate("window.location.href") or ""
 
         if "yükleniyor" not in title.lower() and "/cs/tloading" not in url:
             return True
 
+        # 1) Turnstile checkbox'ını tıkla (iframe içinde)
+        try:
+            iframes = await pg.query_selector_all("iframe")
+            for iframe in iframes:
+                src = await iframe.get_attribute("src") or ""
+                if "turnstile" in src or "challenge" in src or "cloudflare" in src:
+                    print(f"  🔓 Turnstile iframe bulundu, tıklanıyor...")
+                    # iframe'in ortasına tıkla
+                    await iframe.click()
+                    await asyncio.sleep(3)
+                    break
+        except Exception:
+            pass
+
+        # 2) Turnstile checkbox - JS ile iframe bul ve tıkla
+        try:
+            await pg.evaluate("""
+                (() => {
+                    const iframes = document.querySelectorAll('iframe');
+                    for (const f of iframes) {
+                        const src = f.src || '';
+                        if (src.includes('turnstile') || src.includes('challenge') || src.includes('cloudflare')) {
+                            f.click();
+                            // iframe içine mouse event gönder
+                            const rect = f.getBoundingClientRect();
+                            const x = rect.left + rect.width / 2;
+                            const y = rect.top + rect.height / 2;
+                            const evt = new MouseEvent('click', {bubbles: true, clientX: x, clientY: y});
+                            f.dispatchEvent(evt);
+                            return true;
+                        }
+                    }
+                    return false;
+                })()
+            """)
+        except Exception:
+            pass
+
+        # 3) "Devam Et" butonunu tıkla
         try:
             btn = await pg.find("Devam Et", best_match=True, timeout=2)
             if btn:
@@ -61,6 +100,7 @@ async def bypass_sahibinden_check(pg):
         except Exception:
             pass
 
+        # 4) JS fallback - herhangi bir buton/link
         try:
             clicked = await pg.evaluate("""
                 (() => {
@@ -72,9 +112,20 @@ async def bypass_sahibinden_check(pg):
                 })()
             """)
             if clicked:
-                print(f"  🔓 'Devam Et' JS ile tıklandı!")
                 await asyncio.sleep(3)
                 continue
+        except Exception:
+            pass
+
+        # 5) Mouse ile Turnstile alanına tıkla (koordinat bazlı)
+        try:
+            await pg.evaluate("""
+                (() => {
+                    const el = document.querySelector('[class*=turnstile], [id*=turnstile], [class*=challenge]');
+                    if (el) { el.click(); return true; }
+                    return false;
+                })()
+            """)
         except Exception:
             pass
 
@@ -240,6 +291,12 @@ async def main():
         details.append(d)
         print(f"  ✅ {baslik[:45]}")
         print(f"     💰 {fiyat}  |  📍 {konum}  |  📷 {len(images)} resim")
+
+    # Eski verileri birleştir (yeni çekilenler + eskiler)
+    all_urls = {d["url"] for d in details}
+    for url, item in existing.items():
+        if url not in all_urls:
+            details.append(item)
 
     # JSON'a kaydet
     if details:
