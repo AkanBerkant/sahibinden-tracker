@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sahibinden Tracker</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-bottom: 1px solid #1e293b;
+            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+        .header-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 13px;
+            color: #94a3b8;
+        }
+        .stats span { color: #fbbf24; font-weight: 600; }
+
+        /* Filters */
+        .filters {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #334155;
+            border-radius: 20px;
+            background: #1e293b;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .filter-btn:hover, .filter-btn.active {
+            background: #fbbf24;
+            color: #0f172a;
+            border-color: #fbbf24;
+        }
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            padding: 8px 16px;
+            border: 1px solid #334155;
+            border-radius: 20px;
+            background: #1e293b;
+            color: #e2e8f0;
+            font-size: 13px;
+            outline: none;
+        }
+        .search-box:focus { border-color: #fbbf24; }
+        .sort-select {
+            padding: 8px 16px;
+            border: 1px solid #334155;
+            border-radius: 20px;
+            background: #1e293b;
+            color: #94a3b8;
+            font-size: 13px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* Grid */
+        .grid {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px 40px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 20px;
+        }
+
+        /* Card */
+        .card {
+            background: #1e293b;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid #334155;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: #fbbf24;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        /* Image Slider */
+        .card-images {
+            position: relative;
+            height: 220px;
+            background: #0f172a;
+            overflow: hidden;
+        }
+        .card-images img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: opacity 0.3s;
+        }
+        .img-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.6);
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .card:hover .img-nav { opacity: 1; }
+        .img-nav.prev { left: 8px; }
+        .img-nav.next { right: 8px; }
+        .img-counter {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(0,0,0,0.7);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            color: white;
+        }
+        .no-image {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #475569;
+            font-size: 40px;
+        }
+
+        /* Card Body */
+        .card-body { padding: 16px; }
+        .card-price {
+            font-size: 22px;
+            font-weight: 800;
+            color: #fbbf24;
+            margin-bottom: 6px;
+        }
+        .card-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #cbd5e1;
+            margin-bottom: 10px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .card-location {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .card-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .tag {
+            padding: 4px 10px;
+            background: #0f172a;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        .tag strong { color: #e2e8f0; }
+        .card-date {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #334155;
+            font-size: 11px;
+            color: #475569;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #64748b;
+        }
+        .loading .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #334155;
+            border-top-color: #fbbf24;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Lightbox */
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .lightbox.active { display: flex; }
+        .lightbox img {
+            max-width: 90vw;
+            max-height: 90vh;
+            border-radius: 8px;
+        }
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 30px;
+            cursor: pointer;
+        }
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+        }
+        .lightbox-nav.prev { left: 20px; }
+        .lightbox-nav.next { right: 20px; }
+
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+            .header-inner { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-inner">
+            <div class="logo">Sahibinden Tracker</div>
+            <div class="stats">
+                <div>Toplam: <span id="totalCount">-</span> ilan</div>
+                <div>Son guncelleme: <span id="lastUpdate">-</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="filters">
+        <input type="text" class="search-box" id="searchBox" placeholder="Ara... (baslik, konum, aciklama)">
+        <select class="sort-select" id="sortSelect">
+            <option value="date_desc">En Yeni</option>
+            <option value="price_asc">Fiyat (Artan)</option>
+            <option value="price_desc">Fiyat (Azalan)</option>
+            <option value="m2_desc">m2 (Buyuk)</option>
+        </select>
+        <div id="cityFilters"></div>
+    </div>
+
+    <div class="grid" id="grid">
+        <div class="loading">
+            <div class="spinner"></div>
+            <div>Ilanlar yukleniyor...</div>
+        </div>
+    </div>
+
+    <div class="lightbox" id="lightbox">
+        <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+        <button class="lightbox-nav prev" onclick="lightboxNav(-1)">&#8249;</button>
+        <img id="lightboxImg" src="">
+        <button class="lightbox-nav next" onclick="lightboxNav(1)">&#8250;</button>
+    </div>
+
+    <script>
+        let allData = [];
+        let filteredData = [];
+        let activeCity = null;
+        let lightboxImages = [];
+        let lightboxIndex = 0;
+
+        async function loadData() {
+            try {
+                const r = await fetch('data/ilanlar.json');
+                const data = await r.json();
+                allData = data.ilanlar || [];
+                document.getElementById('totalCount').textContent = data.toplam_ilan;
+                document.getElementById('lastUpdate').textContent = data.son_guncelleme;
+                buildCityFilters();
+                filterAndRender();
+            } catch (e) {
+                document.getElementById('grid').innerHTML = '<div class="loading">Veri yuklenemedi. Scraper calistirilmali.</div>';
+            }
+        }
+
+        function buildCityFilters() {
+            const cities = {};
+            allData.forEach(d => { cities[d.il] = (cities[d.il] || 0) + 1; });
+            const sorted = Object.entries(cities).sort((a, b) => b[1] - a[1]).slice(0, 8);
+            const container = document.getElementById('cityFilters');
+            container.innerHTML = '<button class="filter-btn active" onclick="filterCity(null, this)">Tumu</button>' +
+                sorted.map(([city, count]) =>
+                    `<button class="filter-btn" onclick="filterCity('${city}', this)">${city} (${count})</button>`
+                ).join('');
+        }
+
+        function filterCity(city, btn) {
+            activeCity = city;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            filterAndRender();
+        }
+
+        function filterAndRender() {
+            const q = document.getElementById('searchBox').value.toLowerCase();
+            const sort = document.getElementById('sortSelect').value;
+
+            filteredData = allData.filter(d => {
+                if (activeCity && d.il !== activeCity) return false;
+                if (q) {
+                    const text = `${d.baslik} ${d.konum} ${d.aciklama} ${d.oda_sayisi}`.toLowerCase();
+                    if (!text.includes(q)) return false;
+                }
+                return true;
+            });
+
+            filteredData.sort((a, b) => {
+                switch (sort) {
+                    case 'price_asc': return a.fiyat_sayi - b.fiyat_sayi;
+                    case 'price_desc': return b.fiyat_sayi - a.fiyat_sayi;
+                    case 'm2_desc': return (parseInt(b.m2_brut) || 0) - (parseInt(a.m2_brut) || 0);
+                    default: return 0; // date_desc = default order
+                }
+            });
+
+            renderCards();
+        }
+
+        function renderCards() {
+            const grid = document.getElementById('grid');
+            if (!filteredData.length) {
+                grid.innerHTML = '<div class="loading">Sonuc bulunamadi.</div>';
+                return;
+            }
+
+            grid.innerHTML = filteredData.map((d, idx) => {
+                const imgs = d.images || [];
+                const imgHtml = imgs.length > 0
+                    ? `<img src="${imgs[0]}" alt="${d.baslik}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=no-image>🏠</div>'" onclick="openLightbox(${idx})">
+                       ${imgs.length > 1 ? `
+                       <button class="img-nav prev" onclick="event.stopPropagation();slideImg(this,-1)">&#8249;</button>
+                       <button class="img-nav next" onclick="event.stopPropagation();slideImg(this,1)">&#8250;</button>
+                       ` : ''}
+                       <div class="img-counter">${imgs.length} foto</div>`
+                    : '<div class="no-image">🏠</div>';
+
+                return `
+                <div class="card" data-idx="${idx}" data-img-index="0">
+                    <div class="card-images">${imgHtml}</div>
+                    <div class="card-body">
+                        <div class="card-price">${d.fiyat || 'Fiyat belirtilmemis'}</div>
+                        <div class="card-title">${d.baslik}</div>
+                        <div class="card-location">📍 ${d.konum}</div>
+                        <div class="card-tags">
+                            ${d.oda_sayisi ? `<div class="tag"><strong>${d.oda_sayisi}</strong></div>` : ''}
+                            ${d.m2_brut ? `<div class="tag"><strong>${d.m2_brut}</strong> m²</div>` : ''}
+                            ${d.bina_yasi ? `<div class="tag">${d.bina_yasi}</div>` : ''}
+                            ${d.bulundugu_kat ? `<div class="tag">Kat ${d.bulundugu_kat}</div>` : ''}
+                            ${d.isitma ? `<div class="tag">${d.isitma}</div>` : ''}
+                        </div>
+                        <div class="card-date">
+                            ${d.cekme_tarihi} · <a href="${d.url}" target="_blank" style="color:#fbbf24;text-decoration:none;">Sahibinden'de Gor →</a>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function slideImg(btn, dir) {
+            const card = btn.closest('.card');
+            const idx = parseInt(card.dataset.idx);
+            const d = filteredData[idx];
+            const imgs = d.images || [];
+            let current = parseInt(card.dataset.imgIndex) || 0;
+            current = (current + dir + imgs.length) % imgs.length;
+            card.dataset.imgIndex = current;
+            card.querySelector('.card-images img').src = imgs[current];
+        }
+
+        function openLightbox(idx) {
+            const d = filteredData[idx];
+            lightboxImages = d.images || [];
+            if (!lightboxImages.length) return;
+            lightboxIndex = parseInt(document.querySelector(`[data-idx="${idx}"]`).dataset.imgIndex) || 0;
+            document.getElementById('lightboxImg').src = lightboxImages[lightboxIndex];
+            document.getElementById('lightbox').classList.add('active');
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('active');
+        }
+
+        function lightboxNav(dir) {
+            lightboxIndex = (lightboxIndex + dir + lightboxImages.length) % lightboxImages.length;
+            document.getElementById('lightboxImg').src = lightboxImages[lightboxIndex];
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeLightbox();
+            if (e.key === 'ArrowLeft') lightboxNav(-1);
+            if (e.key === 'ArrowRight') lightboxNav(1);
+        });
+
+        document.getElementById('searchBox').addEventListener('input', filterAndRender);
+        document.getElementById('sortSelect').addEventListener('change', filterAndRender);
+
+        loadData();
+    </script>
+</body>
+</html>
